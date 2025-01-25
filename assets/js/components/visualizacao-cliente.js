@@ -1,4 +1,5 @@
 import ClienteDetalhamento from '../components/cliente-detalhamento.js';
+import Paginacao from '../components/paginacao.js';
 import { API_BASE_URL } from '../config.js';
 
 class ClienteVisualizacao {
@@ -6,6 +7,8 @@ class ClienteVisualizacao {
     this.btnVisualizar = document.querySelector("#btn-visualizar");
     this.dynamicContent = document.querySelector('#dynamic-content');
     this.clienteDetalhamento = new ClienteDetalhamento();
+    this.currentPage = 1;
+    this.totalPages = 1;
     this.init();
   }
 
@@ -16,18 +19,19 @@ class ClienteVisualizacao {
   async handleVisualizarClick(event) {
     event.preventDefault();
     const { formatarNumero } = await import('../utils/formatador.js');
-    const clients = await this.fetchClients();
+    const { clients, totalPages } = await this.fetchClients(this.currentPage - 1);
+    this.totalPages = totalPages;
     this.renderClients(clients, formatarNumero);
   }
 
-  async fetchClients() {
+  async fetchClients(page = 0) {
     try {
-      const response = await fetch(`${API_BASE_URL}/clientes`);
+      const response = await fetch(`${API_BASE_URL}/clientes?page=${page}`);
       const data = await response.json();
-      return data.content;
+      return { clients: data.content, totalPages: data.totalPages };
     } catch (error) {
       console.error('Error fetching clients:', error);
-      return [];
+      return { clients: [], totalPages: 1 };
     }
   }
 
@@ -54,6 +58,8 @@ class ClienteVisualizacao {
         clientesContainer.appendChild(clienteCard);
       });
     }
+
+    this.addPagination();
   }
 
   createClientCard(client, formatarNumero) {
@@ -80,6 +86,25 @@ class ClienteVisualizacao {
     event.preventDefault();
     const client = await this.clienteDetalhamento.fetchClientDetails(clientId);
     this.clienteDetalhamento.renderClientDetails(client);
+  }
+
+  addPagination() {
+    const paginacao = new Paginacao(this.currentPage, this.totalPages, this.handlePaginationClick.bind(this));
+    const paginationHTML = paginacao.render();
+    this.dynamicContent.insertAdjacentHTML('beforeend', paginationHTML);
+    paginacao.attachEvents(this.dynamicContent);
+  }
+
+  async handlePaginationClick(event) {
+    event.preventDefault();
+    const page = parseInt(event.target.getAttribute('data-page'));
+    if (page >= 0 && page < this.totalPages) {
+      this.currentPage = page + 1;
+      const { formatarNumero } = await import('../utils/formatador.js');
+      const { clients, totalPages } = await this.fetchClients(page);
+      this.totalPages = totalPages;
+      this.renderClients(clients, formatarNumero);
+    }
   }
 }
 

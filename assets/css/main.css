@@ -2340,6 +2340,12 @@ section,
   color: var(--contrast-color);
 }
 
+/* Pagination active link style */
+.blog-pagination .active {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
 /*--------------------------------------------------------------
 # Blog Details Section
 --------------------------------------------------------------*/
